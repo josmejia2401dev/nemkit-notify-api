@@ -1,0 +1,21 @@
+'use strict';
+
+const { createValidator } = require('nemkit');
+
+const isInteger = (value, field) => (Number.isSafeInteger(value) ? null : `${field} must be an integer`);
+
+const listQuerySchema = createValidator({
+  page: { type: 'number', toNumber: true, min: 1, max: 100000, custom: isInteger },
+  limit: { type: 'number', toNumber: true, min: 1, max: 100, custom: isInteger },
+  search: { type: 'string', trim: true, maxLength: 100 },
+});
+
+const companyIdSchema = createValidator({
+  id: { type: 'number', required: true, toNumber: true, min: 1, custom: isInteger },
+});
+
+const companyStatusSchema = createValidator({
+  status: { type: 'string', required: true, enum: ['active', 'inactive', 'archived'] },
+});
+
+module.exports = { listQuerySchema, companyIdSchema, companyStatusSchema };

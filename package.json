@@ -1,0 +1,22 @@
+{
+  "name": "nemkit-notify-api",
+  "version": "0.1.0",
+  "description": "API de notificaciones multicanal (Email, SMS, WebPush) como servicio",
+  "main": "src/server.js",
+  "engines": {
+    "node": ">=20.19.0"
+  },
+  "scripts": {
+    "start": "node src/server.js",
+    "dev": "nodemon src/server.js",
+    "migrate:company-user-id": "node src/scripts/migrations/001-company-user-id.js"
+  },
+  "devDependencies": {
+    "nodemon": "^3.1.14"
+  },
+  "dependencies": {
+    "nemkit": "git+https://github.com/josmejia2401dev/nemkit.git#7291c6b9136c959b0d4571740e968b91e0e29cb1",
+    "nodemailer": "^6.9.16",
+    "web-push": "^3.6.7"
+  }
+}
