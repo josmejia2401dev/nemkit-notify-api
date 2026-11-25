@@ -27,45 +27,45 @@ API de notificaciones multicanal (Email, SMS, WebPush) como servicio (NaaS), con
 ### Pública (header `api-key`)
 
 ```
-POST   /api/v1/subscribers
-PUT    /api/v1/subscribers/:id
-DELETE /api/v1/subscribers/:id
-GET    /api/v1/subscribers/:id
-POST   /api/v1/subscribers/:id/topics
-DELETE /api/v1/subscribers/:id/topics/:topicId
-POST   /api/v1/notifications/send
-POST   /api/v1/notifications/broadcast
-GET    /api/v1/notifications/:id
+POST   /api/v1/notify/subscribers
+PUT    /api/v1/notify/subscribers/:id
+DELETE /api/v1/notify/subscribers/:id
+GET    /api/v1/notify/subscribers/:id
+POST   /api/v1/notify/subscribers/:id/topics
+DELETE /api/v1/notify/subscribers/:id/topics/:topicId
+POST   /api/v1/notify/notifications/send
+POST   /api/v1/notify/notifications/broadcast
+GET    /api/v1/notify/notifications/:id
 ```
 
 ### Portal de empresa (JWT)
 
 ```
-GET/PUT  /api/v1/company/profile
-GET/POST /api/v1/company/api-keys
-DELETE   /api/v1/company/api-keys/:id
-GET/POST /api/v1/company/topics
-GET/PUT/DELETE /api/v1/company/topics/:id
-GET/POST /api/v1/company/subscribers
-GET/PUT/DELETE /api/v1/company/subscribers/:id
-GET      /api/v1/company/notifications
-GET      /api/v1/company/notifications/:id
-GET      /api/v1/company/stats/summary
-GET      /api/v1/company/stats/timeseries?days=30
-GET      /api/v1/company/stats/channels
-GET      /api/v1/company/webpush/public-key
+GET/PUT  /api/v1/notify/company/profile
+GET/POST /api/v1/notify/company/api-keys
+DELETE   /api/v1/notify/company/api-keys/:id
+GET/POST /api/v1/notify/company/topics
+GET/PUT/DELETE /api/v1/notify/company/topics/:id
+GET/POST /api/v1/notify/company/subscribers
+GET/PUT/DELETE /api/v1/notify/company/subscribers/:id
+GET      /api/v1/notify/company/notifications
+GET      /api/v1/notify/company/notifications/:id
+GET      /api/v1/notify/company/stats/summary
+GET      /api/v1/notify/company/stats/timeseries?days=30
+GET      /api/v1/notify/company/stats/channels
+GET      /api/v1/notify/company/webpush/public-key
 ```
 
 ### Superadmin (JWT `SUPERADMIN`)
 
 ```
-GET   /api/v1/sys/overview
-GET   /api/v1/sys/companies
-GET   /api/v1/sys/companies/:id
-GET   /api/v1/sys/companies/:id/consumption
-PATCH /api/v1/sys/companies/:id/status   { "status": "active" | "inactive" | "archived" }
-DELETE /api/v1/sys/companies/:id
-GET   /api/v1/sys/users
+GET   /api/v1/notify/sys/overview
+GET   /api/v1/notify/sys/companies
+GET   /api/v1/notify/sys/companies/:id
+GET   /api/v1/notify/sys/companies/:id/consumption
+PATCH /api/v1/notify/sys/companies/:id/status   { "status": "active" | "inactive" | "archived" }
+DELETE /api/v1/notify/sys/companies/:id
+GET   /api/v1/notify/sys/users
 ```
 
 ## Plan
