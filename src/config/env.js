@@ -35,35 +35,11 @@ const env = loadEnv({
   NOTIFY_QUEUE_CONCURRENCY: { type: 'number', default: 5 },
   NOTIFY_JOB_TIMEOUT_MS:    { type: 'number', default: 20000 },
 
-  // Email (SMTP). Si MAIL_HOST está vacío, el canal responde "not configured".
-  MAIL_HOST: { default: '' },
-  MAIL_PORT: { type: 'number', default: 587 },
-  MAIL_SECURE: { type: 'boolean', default: false },
-  MAIL_USER: { default: '' },
-  MAIL_PASS: { default: '' },
-  MAIL_FROM: { default: 'no-reply@nemkit.local' },
-
-  // Mailjet (canal email del MVP). Si está configurado, tiene prioridad sobre SMTP.
+  // Mailjet: único proveedor de email del MVP.
   MAILJET_API_KEY: { default: '' },
   MAILJET_API_SECRET: { default: '' },
   MAILJET_FROM_EMAIL: { default: '' },
   MAILJET_FROM_NAME: { default: 'Nemkit Notify' },
-
-  // SMS (Twilio REST). Deshabilitado por defecto.
-  SMS_ENABLED: { type: 'boolean', default: false },
-  TWILIO_ACCOUNT_SID: { default: '' },
-  TWILIO_AUTH_TOKEN: { default: '' },
-  TWILIO_FROM: { default: '' },
-
-  // WebPush (VAPID).
-  VAPID_PUBLIC_KEY: { default: '' },
-  VAPID_PRIVATE_KEY: { default: '' },
-  VAPID_SUBJECT: { default: 'mailto:soporte@nemkit.local' },
-
-  STORAGE_TMP_PATH:        { default: './tmp/storage' },
-  STORAGE_MEMORY_LIMIT_MB: { type: 'number', default: 5 },   // < 5MB → staging en RAM
-  STORAGE_MAX_FILE_MB:     { type: 'number', default: 15 },  // límite hard (BSON < 16MB)
-  STORAGE_STAGING_TTL_MS:  { type: 'number', default: 1800000 },
 
   // Seed del admin (primer arranque, si no hay usuarios).
   // Los tres son REQUERIDOS y sin default: nada de credenciales del admin

@@ -1,7 +1,6 @@
 'use strict';
 
-const { express, success } = require('nemkit');
-const { env } = require('../config/env');
+const { express } = require('nemkit');
 const { authenticate } = require('../middlewares/auth.middleware');
 const { requireCompany } = require('../middlewares/users.middleware');
 const apiKeysRoutes = require('../modules/notify/api-keys/api-keys.routes');
@@ -23,8 +22,5 @@ router.use('/company/topics', topicsRoutes);
 router.use('/company/subscribers', subscribersRoutes);
 router.use('/company/notifications', notificationsRoutes);
 router.use('/company/stats', statsRoutes);
-
-router.get('/company/webpush/public-key', (_req, res) =>
-  success(res, { publicKey: env.VAPID_PUBLIC_KEY }));
 
 module.exports = router;

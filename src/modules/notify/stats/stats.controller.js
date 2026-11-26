@@ -1,11 +1,11 @@
 'use strict';
 
 const { success } = require('nemkit');
-const { env } = require('../../../config/env');
 const { notificationsService } = require('../notifications/notifications.service');
+const { mailjetConfigured } = require('../engine/email.service');
 
 class StatsController {
-  /** GET /company/stats/summary — enviados/fallidos/cola por canal. */
+  /** GET /company/stats/summary — enviados/fallidos/cola. */
   async summary(req, res, next) {
     try {
       return success(res, await notificationsService.summary(req.user.id));
@@ -14,7 +14,7 @@ class StatsController {
     }
   }
 
-  /** GET /company/stats/timeseries?days=30 — serie diaria por canal y estado. */
+  /** GET /company/stats/timeseries?days=30 — serie diaria por estado. */
   async timeseries(req, res, next) {
     try {
       return success(res, await notificationsService.timeseries(req.user.id, req.query.days));
@@ -23,19 +23,10 @@ class StatsController {
     }
   }
 
-  /** GET /company/stats/channels — disponibilidad real de cada canal. */
+  /** GET /company/stats/channels — disponibilidad del canal email. */
   async channels(_req, res, next) {
     try {
-      return success(res, {
-        email: Boolean(env.MAIL_HOST),
-        sms: Boolean(
-          env.SMS_ENABLED
-          && env.TWILIO_ACCOUNT_SID
-          && env.TWILIO_AUTH_TOKEN
-          && env.TWILIO_FROM,
-        ),
-        webpush: Boolean(env.VAPID_PUBLIC_KEY && env.VAPID_PRIVATE_KEY),
-      });
+      return success(res, { email: mailjetConfigured() });
     } catch (error) {
       next(error);
     }

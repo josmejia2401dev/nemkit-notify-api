@@ -6,21 +6,11 @@ const { paginationOptions } = require('../../foundation/query.utils');
 const { limitsService } = require('../../foundation/limits/limits.service');
 const { topicsService } = require('../topics/topics.service');
 
-/** Normaliza la suscripción WebPush: acepta un objeto o un arreglo. */
-function normalizeWebpush(value) {
-  if (value == null) return undefined;
-  if (Array.isArray(value)) return value;
-  return [value];
-}
-
-/** Verifica que el suscriptor tenga al menos un canal de contacto utilizable. */
-function assertHasContact(data) {
-  const hasEmail = Boolean(String(data.email ?? '').trim());
-  const hasPhone = Boolean(String(data.phone ?? '').trim());
-  const hasWebpush = Array.isArray(data.webpush) && data.webpush.length > 0;
-  if (!hasEmail && !hasPhone && !hasWebpush) {
-    throw HttpError.badRequest('At least one contact channel is required (email, phone or webpush)');
-  }
+/** Notify solo entrega email: el suscriptor debe tener uno válido. */
+function requireEmail(data) {
+  const email = String(data.email ?? '').trim();
+  if (!email) throw HttpError.badRequest('email is required');
+  return email;
 }
 
 class SubscribersService extends BaseService {
@@ -37,7 +27,7 @@ class SubscribersService extends BaseService {
       page,
       limit,
       sort: { createdAt: -1 },
-      search: search ? { value: search, fields: ['externalId', 'email', 'phone'] } : null,
+      search: search ? { value: search, fields: ['externalId', 'email'] } : null,
     });
   }
 
@@ -52,14 +42,11 @@ class SubscribersService extends BaseService {
     const payload = {
       userId,
       externalId: String(data.externalId ?? '').trim(),
-      email: String(data.email ?? '').trim(),
-      phone: String(data.phone ?? '').trim(),
+      email: requireEmail(data),
       locale: data.locale ?? 'es',
       attributes: data.attributes ?? {},
-      webpush: normalizeWebpush(data.webpush) ?? [],
       topicIds: [],
     };
-    assertHasContact(payload);
     try {
       return await super.create(payload, actorId);
     } catch (error) {
@@ -73,11 +60,9 @@ class SubscribersService extends BaseService {
 
     const update = {};
     if (data.externalId !== undefined) update.externalId = String(data.externalId).trim();
-    if (data.email !== undefined) update.email = String(data.email).trim();
-    if (data.phone !== undefined) update.phone = String(data.phone).trim();
+    if (data.email !== undefined) update.email = requireEmail(data);
     if (data.locale !== undefined) update.locale = data.locale;
     if (data.attributes !== undefined) update.attributes = data.attributes;
-    if (data.webpush !== undefined) update.webpush = normalizeWebpush(data.webpush);
 
     try {
       return await this.updateById(id, update, actorId);

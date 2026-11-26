@@ -1,76 +1,56 @@
 'use strict';
 
 const { HttpError, UniqueNumberUtil } = require('nemkit');
-const { CHANNELS, CHANNEL, DELIVERY_STATUS } = require('../notify.constants');
+const { CHANNEL, DELIVERY_STATUS } = require('../notify.constants');
 const { subscribersService } = require('../subscribers/subscribers.service');
 const { topicsService } = require('../topics/topics.service');
 const { notificationsService } = require('../notifications/notifications.service');
 const { limitsService } = require('../../foundation/limits/limits.service');
 const { deliveryQueue } = require('./delivery.queue');
-const { sendEmail, emailConfigured, EMAIL_SPAM_WARNING } = require('./email.service');
+const { sendEmail, mailjetConfigured, EMAIL_SPAM_WARNING } = require('./email.service');
 
-/** Destino visible de cada canal; vacío si el suscriptor no lo tiene cargado. */
-const DESTINATIONS = Object.freeze({
-  [CHANNEL.EMAIL]: (subscriber) => String(subscriber?.email ?? '').trim(),
-  [CHANNEL.SMS]: (subscriber) => String(subscriber?.phone ?? '').trim(),
-  [CHANNEL.WEBPUSH]: (subscriber) => (subscriber?.webpush?.length ? 'webpush' : ''),
-});
-
-function normalizeChannels(value) {
-  if (!Array.isArray(value) || value.length === 0) {
-    throw HttpError.badRequest('channels must contain at least one channel');
-  }
-  const invalid = value.filter((channel) => !CHANNELS.includes(channel));
-  if (invalid.length) {
-    throw HttpError.badRequest(`Unsupported channels: ${invalid.join(', ')}`);
-  }
-  return [...new Set(value)];
-}
-
-function buildDocument({ userId, channel, destination, subscriber, topicId, batchId, payload }) {
+function buildDocument({ userId, destination, subscriber, topicId, batchId, payload }) {
   return {
     userId,
-    channel,
+    channel: CHANNEL.EMAIL,
     subscriberId: subscriber.id,
     topicId: topicId ?? null,
     batchId: batchId ?? null,
     destination,
     title: payload.title,
     body: payload.body,
-    data: payload.data ?? {},
+    data: {
+      ...(payload.data ?? {}),
+      ...(payload.html ? { html: payload.html } : {}),
+    },
     status: DELIVERY_STATUS.QUEUED,
   };
 }
 
 class NotificationDispatcher {
-  /** Envío directo a un suscriptor, un documento por canal solicitado. */
+  /** Envío directo a un suscriptor por email. */
   async send(userId, payload, actorId) {
-    const channels = normalizeChannels(payload.channels);
     const subscriber = await subscribersService.get(userId, payload.subscriberId);
-
-    const documents = channels.map((channel) => {
-      const destination = DESTINATIONS[channel](subscriber);
-      if (!destination) {
-        throw new HttpError(400, `Subscriber has no ${channel} contact`, {
-          code: 'MISSING_CHANNEL_CONTACT',
-        });
-      }
-      return buildDocument({
-        userId,
-        channel,
-        destination,
-        subscriber,
-        payload,
+    const destination = String(subscriber?.email ?? '').trim();
+    if (!destination) {
+      throw new HttpError(400, 'Subscriber has no email', {
+        code: 'MISSING_CHANNEL_CONTACT',
       });
-    });
+    }
+
+    const documents = [buildDocument({
+      userId,
+      destination,
+      subscriber,
+      payload,
+    })];
 
     await limitsService.assertCanConsume(userId, 'notifications', documents.length);
     return this.#queue(userId, documents, actorId, documents.length);
   }
 
-  /** Envío masivo a los suscriptores de un tema, acotado por el tope del plan. */
+  /** Envío masivo a los suscriptores con email de un tema. */
   async broadcast(userId, payload, actorId) {
-    const channels = normalizeChannels(payload.channels);
     const topic = await topicsService.assertOwned(userId, payload.topicId);
 
     const usage = await limitsService.getLimitUsage(userId);
@@ -88,38 +68,34 @@ class NotificationDispatcher {
     const batchId = `batch_${UniqueNumberUtil.generateRaw()}`;
     const documents = [];
     for (const subscriber of subscribers) {
-      for (const channel of channels) {
-        const destination = DESTINATIONS[channel](subscriber);
-        if (!destination) continue;
-        documents.push(
-          buildDocument({
-            userId,
-            channel,
-            destination,
-            subscriber,
-            topicId: topic.id,
-            batchId,
-            payload,
-          }),
-        );
-      }
+      const destination = String(subscriber?.email ?? '').trim();
+      if (!destination) continue;
+      documents.push(
+        buildDocument({
+          userId,
+          destination,
+          subscriber,
+          topicId: topic.id,
+          batchId,
+          payload,
+        }),
+      );
     }
 
     if (!documents.length) {
-      throw HttpError.badRequest('No subscribers with the requested channels in this topic');
+      throw HttpError.badRequest('No subscribers with email in this topic');
     }
 
     await limitsService.assertCanConsume(userId, 'notifications', documents.length);
-    return this.#queue(userId, documents, actorId, subscribers.length, batchId);
+    return this.#queue(userId, documents, actorId, documents.length, batchId);
   }
-
 
   /**
    * Envío directo de un correo tal como lo entrega el cliente, sin plantillas.
    * Se registra en el historial y consume el límite mensual de notificaciones.
    */
   async sendEmail(userId, payload, actorId) {
-    if (!emailConfigured()) {
+    if (!mailjetConfigured()) {
       throw new HttpError(503, 'Email channel is not configured', {
         code: 'EMAIL_NOT_CONFIGURED',
       });

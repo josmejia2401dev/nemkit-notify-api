@@ -1,6 +1,6 @@
 # nemkit-notify-api
 
-API de notificaciones multicanal (Email, SMS, WebPush) como servicio (NaaS), construida sobre `nemkit`.
+API de notificaciones **por email** como servicio (NaaS), construida sobre `nemkit`.
 
 ## Principios
 
@@ -17,10 +17,10 @@ API de notificaciones multicanal (Email, SMS, WebPush) como servicio (NaaS), con
 | `foundation/*` | Copia del foundation de inventario (`auth-users`, `users`, `tokens`, `users-profile`, `employees*`, `feedback`, `sys-*`, `limits`). |
 | `notify/api-keys` | CRUD de API Keys por empresa. |
 | `notify/topics` | Temas de suscripción y conteo de suscriptores. |
-| `notify/subscribers` | Suscriptores con `topicIds[]` y suscripciones WebPush. |
-| `notify/notifications` | Entregas (`notify_deliveries`): historial, métricas y estado. |
-| `notify/engine` | Dispatcher, processor, cola y estrategias por canal. |
-| `notify/stats` | Resumen y serie temporal por canal. |
+| `notify/subscribers` | Suscriptores con email y `topicIds[]`. |
+| `notify/notifications` | Entregas de email (`notify_deliveries`): historial, métricas y estado. |
+| `notify/engine` | Dispatcher, processor, cola y cliente Mailjet. |
+| `notify/stats` | Resumen y serie temporal de email. |
 
 ## API
 
@@ -34,8 +34,8 @@ GET    /api/v1/notify/subscribers/:id
 POST   /api/v1/notify/subscribers/:id/topics
 DELETE /api/v1/notify/subscribers/:id/topics/:topicId
 POST   /api/v1/notify/notifications/email
-POST   /api/v1/notify/notifications/send
-POST   /api/v1/notify/notifications/broadcast
+POST   /api/v1/notify/notifications/send       (email)
+POST   /api/v1/notify/notifications/broadcast  (email)
 GET    /api/v1/notify/notifications/:id
 ```
 
@@ -54,7 +54,6 @@ GET      /api/v1/notify/company/notifications/:id
 GET      /api/v1/notify/company/stats/summary
 GET      /api/v1/notify/company/stats/timeseries?days=30
 GET      /api/v1/notify/company/stats/channels
-GET      /api/v1/notify/company/webpush/public-key
 ```
 
 ### Superadmin (JWT `SUPERADMIN`)

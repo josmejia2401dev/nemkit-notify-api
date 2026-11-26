@@ -1,10 +1,8 @@
 'use strict';
 
-/** Canales soportados por el motor de notificaciones. */
+/** Canal soportado por el motor de notificaciones: únicamente email. */
 const CHANNEL = Object.freeze({
   EMAIL: 'email',
-  SMS: 'sms',
-  WEBPUSH: 'webpush',
 });
 
 const CHANNELS = Object.freeze(Object.values(CHANNEL));

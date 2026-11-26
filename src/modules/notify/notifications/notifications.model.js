@@ -4,8 +4,8 @@ const { mongoose, applyPlatformSchema } = require('nemkit');
 const { CHANNELS, DELIVERY_STATUS, DELIVERY_STATUSES } = require('../notify.constants');
 
 /**
- * Una fila = un canal de un destinatario. Es la unidad que se muestra en el
- * historial y la que se agrega para las métricas por canal y la tasa de error.
+ * Una fila = un email de un destinatario. Es la unidad del historial y de las
+ * métricas de entrega. Notify solo soporta email en este MVP.
  */
 const NotificationSchema = applyPlatformSchema({
   userId: { type: Number, required: true, index: true },
@@ -14,7 +14,7 @@ const NotificationSchema = applyPlatformSchema({
   subscriberId: { type: Number, default: null, index: true },
   topicId: { type: Number, default: null },
   batchId: { type: String, default: null },
-  // Email, teléfono o "webpush". Solo para mostrar; el envío usa el suscriptor.
+  // Correo destino; en envíos directos no hay suscriptor.
   destination: { type: String, trim: true, default: '', maxlength: 500 },
   title: { type: String, required: true, trim: true, maxlength: 200 },
   body: { type: String, required: true, trim: true, maxlength: 10000 },

@@ -15,20 +15,16 @@ const subscriberIdSchema = createValidator({
 
 const subscriberCreateSchema = createValidator({
   externalId: { type: 'string', required: true, trim: true, minLength: 1, maxLength: 100 },
-  email: { type: 'string', trim: true, maxLength: 254 },
-  phone: { type: 'string', trim: true, maxLength: 20 },
+  email: { type: 'email', required: true, trim: true, maxLength: 254 },
   locale: { type: 'string', trim: true, maxLength: 10 },
   attributes: { type: 'object' },
-  webpush: { type: 'any' },
 });
 
 const subscriberUpdateSchema = createValidator({
   externalId: { type: 'string', trim: true, minLength: 1, maxLength: 100 },
-  email: { type: 'string', trim: true, maxLength: 254 },
-  phone: { type: 'string', trim: true, maxLength: 20 },
+  email: { type: 'email', trim: true, maxLength: 254 },
   locale: { type: 'string', trim: true, maxLength: 10 },
   attributes: { type: 'object' },
-  webpush: { type: 'any' },
 });
 
 const subscribeSchema = createValidator({

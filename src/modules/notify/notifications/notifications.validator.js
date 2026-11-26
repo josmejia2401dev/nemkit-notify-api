@@ -17,9 +17,9 @@ const notificationIdSchema = createValidator({
 });
 
 const messageSchema = {
-  channels: { type: 'array', required: true, minLength: 1, maxLength: 3 },
-  title: { type: 'string', required: true, trim: true, minLength: 1, maxLength: 120 },
-  body: { type: 'string', required: true, trim: true, minLength: 1, maxLength: 2000 },
+  title: { type: 'string', required: true, trim: true, minLength: 1, maxLength: 200 },
+  body: { type: 'string', required: true, trim: true, minLength: 1, maxLength: 10000 },
+  html: { type: 'string', trim: true, maxLength: 50000 },
   data: { type: 'object' },
 };
 
