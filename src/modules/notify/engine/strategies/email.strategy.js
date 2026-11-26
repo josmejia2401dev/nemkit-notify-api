@@ -1,31 +1,7 @@
 'use strict';
 
-const nodemailer = require('nodemailer');
-const { env } = require('../../../../config/env');
+const { sendEmail } = require('../email.service');
 const { CHANNEL } = require('../../notify.constants');
-
-let transporter = null;
-
-function configError(message, code) {
-  const error = new Error(message);
-  error.code = code;
-  return error;
-}
-
-function getTransporter() {
-  if (!env.MAIL_HOST) {
-    throw configError('Email channel is not configured (MAIL_HOST)', 'CHANNEL_NOT_CONFIGURED');
-  }
-  if (!transporter) {
-    transporter = nodemailer.createTransport({
-      host: env.MAIL_HOST,
-      port: env.MAIL_PORT,
-      secure: env.MAIL_SECURE,
-      auth: env.MAIL_USER ? { user: env.MAIL_USER, pass: env.MAIL_PASS } : undefined,
-    });
-  }
-  return transporter;
-}
 
 class EmailStrategy {
   get channel() {
@@ -34,15 +10,18 @@ class EmailStrategy {
 
   async send({ delivery, subscriber }) {
     const to = String(subscriber?.email ?? '').trim();
-    if (!to) throw configError('Subscriber has no email', 'SUBSCRIBER_WITHOUT_EMAIL');
+    if (!to) {
+      const error = new Error('Subscriber has no email');
+      error.code = 'SUBSCRIBER_WITHOUT_EMAIL';
+      throw error;
+    }
 
-    const info = await getTransporter().sendMail({
-      from: env.MAIL_FROM,
+    return sendEmail({
       to,
       subject: delivery.title,
       text: delivery.body,
+      html: typeof delivery.data?.html === 'string' ? delivery.data.html : undefined,
     });
-    return { providerMessageId: info.messageId ?? null };
   }
 }
 

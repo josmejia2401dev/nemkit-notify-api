@@ -43,6 +43,12 @@ const env = loadEnv({
   MAIL_PASS: { default: '' },
   MAIL_FROM: { default: 'no-reply@nemkit.local' },
 
+  // Mailjet (canal email del MVP). Si está configurado, tiene prioridad sobre SMTP.
+  MAILJET_API_KEY: { default: '' },
+  MAILJET_API_SECRET: { default: '' },
+  MAILJET_FROM_EMAIL: { default: '' },
+  MAILJET_FROM_NAME: { default: 'Nemkit Notify' },
+
   // SMS (Twilio REST). Deshabilitado por defecto.
   SMS_ENABLED: { type: 'boolean', default: false },
   TWILIO_ACCOUNT_SID: { default: '' },

@@ -10,19 +10,21 @@ const { CHANNELS, DELIVERY_STATUS, DELIVERY_STATUSES } = require('../notify.cons
 const NotificationSchema = applyPlatformSchema({
   userId: { type: Number, required: true, index: true },
   channel: { type: String, enum: CHANNELS, required: true, index: true },
-  subscriberId: { type: Number, required: true, index: true },
+  // Puede ser null en envíos directos por API (correo sin suscriptor).
+  subscriberId: { type: Number, default: null, index: true },
   topicId: { type: Number, default: null },
   batchId: { type: String, default: null },
   // Email, teléfono o "webpush". Solo para mostrar; el envío usa el suscriptor.
   destination: { type: String, trim: true, default: '', maxlength: 500 },
-  title: { type: String, required: true, trim: true, maxlength: 120 },
-  body: { type: String, required: true, trim: true, maxlength: 2000 },
+  title: { type: String, required: true, trim: true, maxlength: 200 },
+  body: { type: String, required: true, trim: true, maxlength: 10000 },
   data: { type: mongoose.Schema.Types.Mixed, default: {} },
   status: { type: String, enum: DELIVERY_STATUSES, default: DELIVERY_STATUS.QUEUED, index: true },
   error: {
     code: { type: String, default: null },
     message: { type: String, default: null },
   },
+  provider: { type: String, default: null },
   providerMessageId: { type: String, default: null },
   sentAt: { type: Date, default: null },
 });

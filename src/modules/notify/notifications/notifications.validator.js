@@ -33,4 +33,19 @@ const broadcastSchema = createValidator({
   ...messageSchema,
 });
 
-module.exports = { listQuerySchema, notificationIdSchema, sendSchema, broadcastSchema };
+/** MVP de email: el cliente envía el contenido final, sin plantillas. */
+const sendEmailSchema = createValidator({
+  to: { type: 'email', required: true, trim: true, lowercase: true, maxLength: 254 },
+  toName: { type: 'string', trim: true, maxLength: 100 },
+  subject: { type: 'string', required: true, trim: true, minLength: 1, maxLength: 200 },
+  text: { type: 'string', required: true, trim: true, minLength: 1, maxLength: 10000 },
+  html: { type: 'string', trim: true, maxLength: 50000 },
+});
+
+module.exports = {
+  listQuerySchema,
+  notificationIdSchema,
+  sendSchema,
+  broadcastSchema,
+  sendEmailSchema,
+};

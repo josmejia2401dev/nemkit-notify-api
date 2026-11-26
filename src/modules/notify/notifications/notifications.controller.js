@@ -3,7 +3,13 @@
 const { success, paginated } = require('nemkit');
 const { notificationsService } = require('./notifications.service');
 const { notificationDispatcher } = require('../engine/notification.dispatcher');
-const { listQuerySchema, notificationIdSchema, sendSchema, broadcastSchema } = require('./notifications.validator');
+const {
+  listQuerySchema,
+  notificationIdSchema,
+  sendSchema,
+  broadcastSchema,
+  sendEmailSchema,
+} = require('./notifications.validator');
 
 function check(schema, data, req, res) {
   const result = schema.check(data ?? {}, req);
@@ -45,6 +51,24 @@ class NotificationsController {
       if (!body) return;
       const result = await notificationDispatcher.send(req.tenant.userId, body, req.tenant.apiKeyId);
       return success(res, result, 'Notification queued', 202);
+    } catch (error) {
+      next(error);
+    }
+  }
+
+
+  /** POST /notifications/email — API pública de email sin plantillas. */
+  async sendEmail(req, res, next) {
+    try {
+      const body = check(sendEmailSchema, req.body, req, res);
+      if (!body) return;
+      const result = await notificationDispatcher.sendEmail(
+        req.tenant.userId,
+        body,
+        req.tenant.apiKeyId,
+      );
+      res.setHeader('X-Notify-Warning', result.spamWarning);
+      return success(res, result, 'Email sent', 200);
     } catch (error) {
       next(error);
     }

@@ -84,6 +84,7 @@ class NotificationsService extends BaseService {
       status: DELIVERY_STATUS.SENT,
       sentAt: new Date(),
       error: { code: null, message: null },
+      provider: result.provider ?? null,
       providerMessageId: result.providerMessageId ?? null,
     });
   }

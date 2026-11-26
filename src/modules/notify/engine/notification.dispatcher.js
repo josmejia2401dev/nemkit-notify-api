@@ -7,6 +7,7 @@ const { topicsService } = require('../topics/topics.service');
 const { notificationsService } = require('../notifications/notifications.service');
 const { limitsService } = require('../../foundation/limits/limits.service');
 const { deliveryQueue } = require('./delivery.queue');
+const { sendEmail, emailConfigured, EMAIL_SPAM_WARNING } = require('./email.service');
 
 /** Destino visible de cada canal; vacío si el suscriptor no lo tiene cargado. */
 const DESTINATIONS = Object.freeze({
@@ -110,6 +111,81 @@ class NotificationDispatcher {
 
     await limitsService.assertCanConsume(userId, 'notifications', documents.length);
     return this.#queue(userId, documents, actorId, subscribers.length, batchId);
+  }
+
+
+  /**
+   * Envío directo de un correo tal como lo entrega el cliente, sin plantillas.
+   * Se registra en el historial y consume el límite mensual de notificaciones.
+   */
+  async sendEmail(userId, payload, actorId) {
+    if (!emailConfigured()) {
+      throw new HttpError(503, 'Email channel is not configured', {
+        code: 'EMAIL_NOT_CONFIGURED',
+      });
+    }
+
+    await limitsService.assertCanConsume(userId, 'notifications', 1);
+
+    const [notification] = await notificationsService.enqueue([
+      {
+        userId,
+        channel: CHANNEL.EMAIL,
+        subscriberId: null,
+        topicId: null,
+        batchId: null,
+        destination: payload.to,
+        title: payload.subject,
+        body: payload.text,
+        data: {
+          html: payload.html ?? null,
+          toName: payload.toName ?? null,
+          source: 'api',
+        },
+        status: DELIVERY_STATUS.QUEUED,
+      },
+    ], actorId);
+
+    let result;
+    try {
+      result = await sendEmail({
+        to: payload.to,
+        toName: payload.toName,
+        subject: payload.subject,
+        text: payload.text,
+        html: payload.html,
+      });
+    } catch (error) {
+      await notificationsService.markFailed(notification.id, error).catch(() => null);
+      throw new HttpError(502, `Email could not be sent: ${error.message}`, {
+        code: error.code ?? 'EMAIL_SEND_FAILED',
+      });
+    }
+
+    await notificationsService.markSent(notification.id, result).catch(() => null);
+    await limitsService.recordUsage(userId, 'notifications', 1).catch(() => null);
+    const usage = await limitsService.getLimitUsage(userId).catch(() => null);
+    const notifications = usage?.limits?.notifications ?? null;
+
+    return {
+      id: notification.id,
+      status: DELIVERY_STATUS.SENT,
+      channel: CHANNEL.EMAIL,
+      destination: payload.to,
+      provider: result.provider,
+      providerMessageId: result.providerMessageId,
+      spamWarning: EMAIL_SPAM_WARNING,
+      warnings: [EMAIL_SPAM_WARNING],
+      usage: notifications
+        ? {
+          used: notifications.used,
+          max: notifications.max,
+          remaining: notifications.remaining,
+          period: usage?.period ?? null,
+          limitPeriod: notifications.period,
+        }
+        : null,
+    };
   }
 
   async #queue(userId, documents, actorId, recipients, batchId = null) {
