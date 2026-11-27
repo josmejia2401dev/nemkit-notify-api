@@ -2,10 +2,10 @@
 
 const { success } = require('nemkit');
 const { notificationsService } = require('../notifications/notifications.service');
-const { mailjetConfigured } = require('../engine/email.service');
+const { mailjetConfigured } = require('../notifications/email.service');
 
 class StatsController {
-  /** GET /company/stats/summary — enviados/fallidos/cola. */
+  /** GET /company/stats/summary — enviados y fallidos. */
   async summary(req, res, next) {
     try {
       return success(res, await notificationsService.summary(req.user.id));

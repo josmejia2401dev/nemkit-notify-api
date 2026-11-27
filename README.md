@@ -4,22 +4,19 @@ API de notificaciones **por email** como servicio (NaaS), construida sobre `nemk
 
 ## Principios
 
-- **Foundation copiado** de `nemkit-inventory-api`: autenticación JWT, refresh tokens, usuarios, tokens, feedback, empleados, límites, logger, conexión Mongo y manejo de errores. No se sincroniza automáticamente: es copia y pega (ver `FOUNDATION.md`).
-- **Tenant = `users`**: el dueño de la cuenta es la empresa. Todas las colecciones llevan `userId`. El estado de la empresa es el `recordStatus` del usuario dueño (`active` / `inactive` / `archived` / `deleted`).
-- **Sin Redis ni BullMQ**: la cola es `createQueue` de `nemkit` (en memoria, mismo proceso). MongoDB es la fuente de verdad del estado de cada entrega y se re-encola lo pendiente al arrancar.
-- **Sin reintentos ni idempotencia**: una entrega tiene estado terminal (`queued` → `sent` | `failed`).
+- **Foundation transversal en `nemkit`**: autenticación JWT, refresh tokens, usuarios, tokens, feedback, empleados y límites se consumen desde `nemkit` (`createFoundation`). Este proyecto solo inyecta su `.env`, logger, planes y métricas. El foundation se monta bajo `/api/v1/notify/foundation`.
+- **Tenant = `foundation_users`**: el dueño de la cuenta es la empresa. Todas las colecciones llevan `userId`. El estado de la empresa es el `recordStatus` del usuario dueño (`active` / `inactive` / `archived` / `deleted`).
+- **Envío directo**: no hay cola, worker ni reintentos. La petición se recibe y se entrega enseguida con Mailjet.
+- **Sin topics ni suscriptores**: el cliente envía a uno o varios correos directamente.
 - **API Key en claro** y visible en cualquier momento. El API público solo valida el header `api-key`.
 
 ## Módulos
 
 | Módulo | Responsabilidad |
 | --- | --- |
-| `foundation/*` | Copia del foundation de inventario (`auth-users`, `users`, `tokens`, `users-profile`, `employees*`, `feedback`, `sys-*`, `limits`). |
+| `nemkit` foundation | Auth, usuarios, tokens, empleados, feedback, límites y panel `sys`, provistos por el paquete `nemkit`. |
 | `notify/api-keys` | CRUD de API Keys por empresa. |
-| `notify/topics` | Temas de suscripción y conteo de suscriptores. |
-| `notify/subscribers` | Suscriptores con email y `topicIds[]`. |
-| `notify/notifications` | Entregas de email (`notify_deliveries`): historial, métricas y estado. |
-| `notify/engine` | Dispatcher, processor, cola y cliente Mailjet. |
+| `notify/notifications` | Envío directo, historial y métricas de email (`notify_deliveries`). |
 | `notify/stats` | Resumen y serie temporal de email. |
 
 ## API
@@ -27,28 +24,14 @@ API de notificaciones **por email** como servicio (NaaS), construida sobre `nemk
 ### Pública (header `api-key`)
 
 ```
-POST   /api/v1/notify/subscribers
-PUT    /api/v1/notify/subscribers/:id
-DELETE /api/v1/notify/subscribers/:id
-GET    /api/v1/notify/subscribers/:id
-POST   /api/v1/notify/subscribers/:id/topics
-DELETE /api/v1/notify/subscribers/:id/topics/:topicId
-POST   /api/v1/notify/notifications/email
-POST   /api/v1/notify/notifications/send       (email)
-POST   /api/v1/notify/notifications/broadcast  (email)
-GET    /api/v1/notify/notifications/:id
+POST /api/v1/notify/notifications/email
 ```
 
 ### Portal de empresa (JWT)
 
 ```
-GET/PUT  /api/v1/notify/company/profile
 GET/POST /api/v1/notify/company/api-keys
 DELETE   /api/v1/notify/company/api-keys/:id
-GET/POST /api/v1/notify/company/topics
-GET/PUT/DELETE /api/v1/notify/company/topics/:id
-GET/POST /api/v1/notify/company/subscribers
-GET/PUT/DELETE /api/v1/notify/company/subscribers/:id
 GET      /api/v1/notify/company/notifications
 GET      /api/v1/notify/company/notifications/:id
 GET      /api/v1/notify/company/stats/summary
@@ -56,30 +39,45 @@ GET      /api/v1/notify/company/stats/timeseries?days=30
 GET      /api/v1/notify/company/stats/channels
 ```
 
+### Foundation (JWT, provisto por `nemkit`)
+
+Perfil, autenticación, límites, feedback y panel de plataforma viven en el
+módulo transversal `nemkit`, montado bajo `/api/v1/notify/foundation`.
+
+```
+POST   /api/v1/notify/foundation/auth/users/login
+POST   /api/v1/notify/foundation/auth/users/register
+POST   /api/v1/notify/foundation/auth/employees/login
+GET/PUT /api/v1/notify/foundation/users/profile
+GET/PUT /api/v1/notify/foundation/employees/profile
+GET    /api/v1/notify/foundation/limits
+GET    /api/v1/notify/foundation/limits/plans
+POST   /api/v1/notify/foundation/feedback
+```
+
 ### Superadmin (JWT `SUPERADMIN`)
 
 ```
-GET   /api/v1/notify/sys/overview
-GET   /api/v1/notify/sys/companies
-GET   /api/v1/notify/sys/companies/:id
-GET   /api/v1/notify/sys/companies/:id/consumption
-PATCH /api/v1/notify/sys/companies/:id/status   { "status": "active" | "inactive" | "archived" }
-DELETE /api/v1/notify/sys/companies/:id
-GET   /api/v1/notify/sys/users
+GET   /api/v1/notify/foundation/sys/overview
+GET   /api/v1/notify/foundation/sys/companies
+GET   /api/v1/notify/foundation/sys/companies/:id
+GET   /api/v1/notify/foundation/sys/companies/:id/consumption
+PATCH /api/v1/notify/foundation/sys/companies/:id/status   { "status": "active" | "inactive" | "archived" }
+DELETE /api/v1/notify/foundation/sys/companies/:id
+GET   /api/v1/notify/foundation/sys/users
 ```
 
 ### Email directo (MVP, sin plantillas)
 
-El cliente envía el asunto, el texto y el HTML final. No hay plantillas ni
-variables del sistema.
+El cliente envía el asunto, el texto y el HTML final. `to` acepta un correo o
+un arreglo de correos (máximo 20 por petición).
 
 ```bash
 curl -X POST http://localhost:4001/api/v1/notify/notifications/email \
   -H "api-key: nk_live_..." \
   -H "Content-Type: application/json" \
   -d '{
-    "to": "cliente@example.com",
-    "toName": "Cliente",
+    "to": ["cliente@example.com", "otro@example.com"],
     "subject": "Tu código de verificación es 482910",
     "text": "Tu código OTP es: 482910. Expira en 5 minutos.",
     "html": "<h3>Tu código de verificación</h3><p>Usa este código: <strong>482910</strong></p>"
@@ -92,15 +90,16 @@ Respuesta:
 {
   "success": true,
   "data": {
-    "id": 123,
     "status": "sent",
-    "channel": "email",
-    "destination": "cliente@example.com",
-    "provider": "mailjet",
-    "providerMessageId": "...",
+    "recipients": 2,
+    "sent": 2,
+    "failed": 0,
+    "deliveries": [
+      { "destination": "cliente@example.com", "status": "sent", "providerMessageId": "..." }
+    ],
     "spamWarning": "El correo puede llegar a la carpeta de spam...",
     "warnings": ["..."],
-    "usage": { "used": 1, "max": 1000, "remaining": 999, "period": "2026-11" }
+    "usage": { "used": 2, "max": 1000, "remaining": 998, "period": "2026-11" }
   }
 }
 ```
@@ -112,23 +111,20 @@ Respuesta:
   `MAILJET_FROM_NAME`; el cliente no puede falsificarlo.
 - **Errores:** `PLAN_LIMIT_REACHED` (409), `EMAIL_NOT_CONFIGURED` (503),
   `EMAIL_SEND_FAILED` (502).
+- **Parcial:** si algunos correos fallan, responde `200` con
+  `status: "partial"` y el detalle en `deliveries`.
 
 ## Plan
 
-Solo existe el plan `free`, definido en
-`src/modules/foundation/limits/limits.constants.js`:
+Solo existe el plan `free`, definido en `src/config/plans.js`:
 
 | Límite | free |
 | --- | --- |
-| Temas | 10 (total) |
-| Suscriptores | 1.000 (total) |
 | API keys | 3 (total) |
 | Notificaciones | 1.000/mes |
-| Destinatarios por broadcast | 1.000 |
 
 En `foundation_users` únicamente se guarda `limitUsage.plan.code`. El uso
 mensual se reinicia de forma perezosa con el corte de `America/Bogota`.
-
 
 ## Ejecución local
 

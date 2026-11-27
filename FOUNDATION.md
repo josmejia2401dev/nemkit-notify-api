@@ -1,51 +1,55 @@
 # Foundation
 
-Este proyecto **no comparte código** con `nemkit-inventory-api`: el foundation se
-copia y pega. Cualquier cambio transversal debe replicarse a mano.
+El foundation (auth, usuarios, tokens, empleados, feedback, límites y panel
+`sys`) ya **no vive en este repositorio**: se consume desde el paquete
+`nemkit` mediante `createFoundation`.
 
-## Origen
+## Configuración
 
-- Repositorio: `nemkit-inventory-api`
-- Fecha de copia: 2026-11-13
-- Base: `nemkit` (`git+https://github.com/josmejia2401dev/nemkit.git#7291c6b9`)
+`src/config/foundation.js` construye el módulo con las dependencias del
+proyecto:
 
-## Copiado sin cambios
-
-```
-src/config/{db,logger,mongo-query,storage}.js
-src/middlewares/{auth,authorize,employees,sys,users}.middleware.js
-src/modules/foundation/{auth-employees,auth-users,employees,employees-profile,feedback,
-                        sys-employees,sys-users,tokens,users,users-profile,query.utils}
-src/routes/{auth,employees,users}.routes.js
-src/seeds/admin-seed.js
-src/scripts/migrations/
-src/app.js
+```js
+const foundation = createFoundation({
+  env,        // .env de nemkit-notify-api
+  logger,
+  plans,      // catálogo de planes de Notify
+  counters,   // conteo de API keys para los límites
+  metrics,    // resumen de notificaciones para /sys
+});
 ```
 
-## Adaptado para notify
+`nemkit` no arranca servidor, no conecta Mongo y no lee `.env`: todo se inyecta
+desde aquí.
 
-| Archivo | Cambio |
-| --- | --- |
-| `src/config/env.js` | Puerto 4001, CORS 4300, variables de mail/SMS/VAPID/cola |
-| `src/config/sync-indexes.js` | Modelos de `notify_*` en lugar de inventario |
-| `src/modules/foundation/limits/*` | Plan único `free` con límites de notify |
-| `src/modules/foundation/sys-overview/*` | Métricas de notificaciones |
-| `src/modules/foundation/sys-companies/*` | Estado, baja lógica y consumo |
-| `src/routes/index.js` | Composición pública / foundation / empresa |
-| `src/server.js` | Arranque del worker de entregas |
+## Montaje
 
-## Eliminado
-
-```
-src/modules/inventory/
-src/routes/inventory.routes.js
-src/middlewares/inventory.middleware.js
+```js
+router.use('/', publicRoutes);
+router.use('/foundation', foundation.router);
+router.use('/company', companyRoutes);
 ```
 
-## Nuevo dominio
+Con `API_PREFIX=/api/v1/notify`, las rutas quedan en
+`/api/v1/notify/foundation/...`.
+
+## Modelos
+
+Las colecciones conservan el prefijo `foundation_`:
+
+- `foundation_users`
+- `foundation_tokens`
+- `foundation_employees`
+- `foundation_feedback`
+
+## Dominio propio de Notify
 
 ```
 src/modules/notify/
 src/middlewares/api-key.middleware.js
 src/routes/{public,company}.routes.js
+src/config/plans.js
 ```
+
+El perfil de empresa ya no se sirve en `/company/profile`; ahora es
+`/foundation/users/profile`.

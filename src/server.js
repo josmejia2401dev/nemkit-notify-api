@@ -6,9 +6,8 @@ const { createServer } = require('nemkit');
 const { env } = require('./config/env');
 const logger = require('./config/logger');
 const { mongoClient } = require('./config/db');
-const { seedAdminUser } = require('./seeds/admin-seed');
+const { foundation } = require('./config/foundation');
 const { syncIndexes } = require('./config/sync-indexes');
-const { startNotifyWorker } = require('./modules/notify/notify.module');
 const app = require('./app');
 
 createServer({
@@ -19,8 +18,7 @@ createServer({
   host: env.HOST,
 }).then(async () => {
   await syncIndexes();
-  await seedAdminUser();
-  await startNotifyWorker();
+  await foundation.seedAdmin();
 }).catch((err) => {
   logger.error('Fatal error starting server', { error: err.message });
   process.exit(1);

@@ -1,6 +1,7 @@
 'use strict';
 
 const logger = require('./logger');
+const { foundation } = require('./foundation');
 
 /**
  * Sincroniza los índices declarados en los esquemas con la base de datos.
@@ -10,13 +11,8 @@ const logger = require('./logger');
  */
 async function syncIndexes() {
   const models = [
-    require('../modules/foundation/users/users.model'),
-    require('../modules/foundation/tokens/tokens.model'),
-    require('../modules/foundation/employees/employees.model'),
-    require('../modules/foundation/feedback/feedback.model'),
+    ...Object.values(foundation.models),
     require('../modules/notify/api-keys/api-keys.model'),
-    require('../modules/notify/topics/topics.model'),
-    require('../modules/notify/subscribers/subscribers.model'),
     require('../modules/notify/notifications/notifications.model'),
   ];
 

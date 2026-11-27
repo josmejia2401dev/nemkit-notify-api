@@ -1,15 +1,14 @@
 'use strict';
 
-/** Canal soportado por el motor de notificaciones: únicamente email. */
+/** Canal soportado por Notify: únicamente email. */
 const CHANNEL = Object.freeze({
   EMAIL: 'email',
 });
 
 const CHANNELS = Object.freeze(Object.values(CHANNEL));
 
-/** Estados de una entrega. No hay reintentos: el estado es terminal. */
+/** Estado terminal de una entrega. No hay cola ni reintentos. */
 const DELIVERY_STATUS = Object.freeze({
-  QUEUED: 'queued',
   SENT: 'sent',
   FAILED: 'failed',
 });

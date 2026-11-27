@@ -19,7 +19,7 @@ function mailjetConfigured() {
 
 function getMailjetClient() {
   if (!mailjetConfigured()) {
-    throw configError('Mailjet is not configured (MAILJET_API_KEY / MAILJET_API_SECRET / MAILJET_FROM_EMAIL)', 'CHANNEL_NOT_CONFIGURED');
+    throw configError('Mailjet is not configured (MAILJET_API_KEY / MAILJET_API_SECRET / MAILJET_FROM_EMAIL)', 'EMAIL_NOT_CONFIGURED');
   }
   if (!mailjetClient) {
     mailjetClient = Mailjet.apiConnect(env.MAILJET_API_KEY, env.MAILJET_API_SECRET);
@@ -27,10 +27,8 @@ function getMailjetClient() {
   return mailjetClient;
 }
 
-/**
- * Envía un correo tal como lo entrega el cliente: sin plantillas ni variables.
- */
-async function sendEmail({ to, toName, subject, text, html }) {
+/** Envía un correo tal como lo entrega el cliente: sin plantillas ni variables. */
+async function sendEmail({ to, subject, text, html }) {
   const request = await getMailjetClient()
     .post('send', { version: 'v3.1' })
     .request({
@@ -40,12 +38,7 @@ async function sendEmail({ to, toName, subject, text, html }) {
             Email: env.MAILJET_FROM_EMAIL,
             Name: env.MAILJET_FROM_NAME || 'Nemkit Notify',
           },
-          To: [
-            {
-              Email: to,
-              ...(toName ? { Name: toName } : {}),
-            },
-          ],
+          To: [{ Email: to }],
           Subject: subject,
           TextPart: text,
           ...(html ? { HTMLPart: html } : {}),

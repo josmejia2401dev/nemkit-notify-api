@@ -32,8 +32,7 @@ const env = loadEnv({
   REQUEST_LOG_ENABLED:  { type: 'boolean', default: true },
 
   // ── Motor de notificaciones ──────────────────────────────────────────
-  NOTIFY_QUEUE_CONCURRENCY: { type: 'number', default: 5 },
-  NOTIFY_JOB_TIMEOUT_MS:    { type: 'number', default: 20000 },
+  // Envío directo, sin cola ni reintentos.
 
   // Mailjet: único proveedor de email del MVP.
   MAILJET_API_KEY: { default: '' },

@@ -2,38 +2,37 @@
 
 const { BaseService, HttpError } = require('nemkit');
 const { NotificationsRepository } = require('./notifications.repository');
-const { paginationOptions } = require('../../foundation/query.utils');
-const { BUSINESS_TIMEZONE } = require('../../foundation/limits/limits.constants');
-const { DELIVERY_STATUS, DELIVERY_STATUSES, CHANNELS } = require('../notify.constants');
+const { foundation: nemkitFoundation } = require('nemkit');
+const { paginationOptions, constants } = nemkitFoundation;
+const { BUSINESS_TIMEZONE } = constants;
+const { CHANNEL, DELIVERY_STATUS, DELIVERY_STATUSES, CHANNELS } = require('../notify.constants');
 
 /** Estructura de métricas por canal a partir de filas `{ _id, count }`. */
 function buildSummary(rows) {
   const channels = Object.fromEntries(
-    CHANNELS.map((channel) => [channel, { sent: 0, failed: 0, queued: 0, total: 0 }]),
+    CHANNELS.map((channel) => [channel, { sent: 0, failed: 0, total: 0 }]),
   );
   let sent = 0;
   let failed = 0;
-  let queued = 0;
 
   for (const row of rows) {
     const channel = row._id.channel;
     const status = row._id.status;
     if (!channels[channel]) continue;
-    channels[channel][status] = (channels[channel][status] ?? 0) + row.count;
+    if (status !== DELIVERY_STATUS.SENT && status !== DELIVERY_STATUS.FAILED) continue;
+
+    channels[channel][status] += row.count;
     channels[channel].total += row.count;
     if (status === DELIVERY_STATUS.SENT) sent += row.count;
     if (status === DELIVERY_STATUS.FAILED) failed += row.count;
-    if (status === DELIVERY_STATUS.QUEUED) queued += row.count;
   }
 
-  const total = sent + failed + queued;
-  const finished = sent + failed;
+  const total = sent + failed;
   return {
     total,
     sent,
     failed,
-    queued,
-    errorRate: finished === 0 ? 0 : Number(((failed / finished) * 100).toFixed(2)),
+    errorRate: total === 0 ? 0 : Number(((failed / total) * 100).toFixed(2)),
     channels,
   };
 }
@@ -73,35 +72,39 @@ class NotificationsService extends BaseService {
     return notification;
   }
 
-  /** Encola documentos ya construidos por el dispatcher y devuelve sus ids. */
-  async enqueue(documents, actorId) {
-    const created = await this.createMany(documents, actorId);
-    return created;
-  }
-
-  markSent(id, result = {}) {
-    return this.updateById(id, {
+  /** Registra una entrega exitosa. */
+  recordSent(userId, delivery, actorId) {
+    return this.create({
+      userId,
+      channel: CHANNEL.EMAIL,
+      destination: delivery.destination,
+      title: delivery.subject,
+      body: delivery.text,
+      data: { html: delivery.html ?? null, source: 'api' },
       status: DELIVERY_STATUS.SENT,
-      sentAt: new Date(),
       error: { code: null, message: null },
-      provider: result.provider ?? null,
-      providerMessageId: result.providerMessageId ?? null,
-    });
+      provider: delivery.provider ?? null,
+      providerMessageId: delivery.providerMessageId ?? null,
+      sentAt: new Date(),
+    }, actorId);
   }
 
-  markFailed(id, error) {
-    return this.updateById(id, {
+  /** Registra una entrega fallida para conservar trazabilidad. */
+  recordFailed(userId, delivery, error, actorId) {
+    return this.create({
+      userId,
+      channel: CHANNEL.EMAIL,
+      destination: delivery.destination,
+      title: delivery.subject,
+      body: delivery.text,
+      data: { html: delivery.html ?? null, source: 'api' },
       status: DELIVERY_STATUS.FAILED,
       error: {
-        code: String(error?.code ?? 'DELIVERY_FAILED').slice(0, 60),
+        code: String(error?.code ?? 'EMAIL_SEND_FAILED').slice(0, 60),
         message: String(error?.message ?? error).slice(0, 500),
       },
-    });
-  }
-
-  /** Entregas que quedaron `queued` en un proceso anterior. */
-  pendingIds(limit = 500) {
-    return this.repository.pendingIds(limit);
+      provider: 'mailjet',
+    }, actorId);
   }
 
   async summary(userId) {

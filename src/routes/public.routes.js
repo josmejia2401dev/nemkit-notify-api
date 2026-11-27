@@ -2,13 +2,11 @@
 
 const { express } = require('nemkit');
 const { apiKeyAuth } = require('../middlewares/api-key.middleware');
-const subscribersRoutes = require('../modules/notify/subscribers/subscribers.routes');
-const notificationsRoutes = require('../modules/notify/notifications/notifications.public.routes');
+const { notificationsController } = require('../modules/notify/notifications/notifications.controller');
 
-/** API pública para los sistemas de los clientes. Tenant resuelto por API Key. */
+/** API pública: solo envío de email, autenticado por `api-key`. */
 const router = express.Router();
 
-router.use('/subscribers', apiKeyAuth, subscribersRoutes);
-router.use('/notifications', apiKeyAuth, notificationsRoutes);
+router.post('/notifications/email', apiKeyAuth, notificationsController.sendEmail.bind(notificationsController));
 
 module.exports = router;

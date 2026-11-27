@@ -2,7 +2,8 @@
 
 const { HttpError, RECORD_STATUS } = require('nemkit');
 const { apiKeysService } = require('../modules/notify/api-keys/api-keys.service');
-const { usersService } = require('../modules/foundation/users/users.service');
+const { foundation } = require('../config/foundation');
+const { users: usersService } = foundation.services;
 
 /**
  * Autenticación del API público por header `api-key`. Simple por diseño:

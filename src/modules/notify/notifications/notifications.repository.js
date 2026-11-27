@@ -2,18 +2,10 @@
 
 const { MongoRepository } = require('nemkit');
 const Notification = require('./notifications.model');
-const { DELIVERY_STATUS } = require('../notify.constants');
 
 class NotificationsRepository extends MongoRepository {
   constructor() {
     super(Notification);
-  }
-
-  pendingIds(limit) {
-    return this.find(
-      { status: DELIVERY_STATUS.QUEUED },
-      { select: '_id', limit, sort: { _id: 1 } },
-    );
   }
 
   /** Conteo agrupado por canal y estado para un tenant (o global si userId es null). */

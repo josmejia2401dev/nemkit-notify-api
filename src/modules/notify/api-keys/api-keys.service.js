@@ -3,8 +3,9 @@
 const crypto = require('crypto');
 const { BaseService, HttpError } = require('nemkit');
 const { ApiKeysRepository } = require('./api-keys.repository');
-const { paginationOptions } = require('../../foundation/query.utils');
-const { limitsService } = require('../../foundation/limits/limits.service');
+const { foundation } = require('../../../config/foundation');
+const { paginationOptions } = foundation;
+const { limits: limitsService } = foundation.services;
 
 class ApiKeysService extends BaseService {
   constructor() {

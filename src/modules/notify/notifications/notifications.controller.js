@@ -2,13 +2,12 @@
 
 const { success, paginated } = require('nemkit');
 const { notificationsService } = require('./notifications.service');
-const { notificationDispatcher } = require('../engine/notification.dispatcher');
+const { notificationSender } = require('./notifications.sender');
 const {
   listQuerySchema,
   notificationIdSchema,
-  sendSchema,
-  broadcastSchema,
   sendEmailSchema,
+  normalizeRecipients,
 } = require('./notifications.validator');
 
 function check(schema, data, req, res) {
@@ -44,54 +43,20 @@ class NotificationsController {
     }
   }
 
-  /** POST /notifications/send — API pública. */
-  async send(req, res, next) {
-    try {
-      const body = check(sendSchema, req.body, req, res);
-      if (!body) return;
-      const result = await notificationDispatcher.send(req.tenant.userId, body, req.tenant.apiKeyId);
-      return success(res, result, 'Notification queued', 202);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-
-  /** POST /notifications/email — API pública de email sin plantillas. */
+  /** POST /notifications/email — API pública de email, uno o varios correos. */
   async sendEmail(req, res, next) {
     try {
+      const to = normalizeRecipients(req.body?.to);
       const body = check(sendEmailSchema, req.body, req, res);
       if (!body) return;
-      const result = await notificationDispatcher.sendEmail(
+
+      const result = await notificationSender.sendEmail(
         req.tenant.userId,
-        body,
+        { ...body, to },
         req.tenant.apiKeyId,
       );
       res.setHeader('X-Notify-Warning', result.spamWarning);
       return success(res, result, 'Email sent', 200);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /** POST /notifications/broadcast — API pública. */
-  async broadcast(req, res, next) {
-    try {
-      const body = check(broadcastSchema, req.body, req, res);
-      if (!body) return;
-      const result = await notificationDispatcher.broadcast(req.tenant.userId, body, req.tenant.apiKeyId);
-      return success(res, result, 'Broadcast queued', 202);
-    } catch (error) {
-      next(error);
-    }
-  }
-
-  /** GET /notifications/:id — API pública (estado de la entrega). */
-  async status(req, res, next) {
-    try {
-      const params = check(notificationIdSchema, req.params, req, res);
-      if (!params) return;
-      return success(res, await notificationsService.get(req.tenant.userId, params.id));
     } catch (error) {
       next(error);
     }
