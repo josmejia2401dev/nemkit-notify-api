@@ -8,6 +8,7 @@ const logger = require('./config/logger');
 const { mongoClient } = require('./config/db');
 const { foundation } = require('./config/foundation');
 const { syncIndexes } = require('./config/sync-indexes');
+const { seedDefaultApiKey } = require('./seeds/default-api-key');
 const { cache } = require('./config/cache');
 const app = require('./app');
 
@@ -20,6 +21,11 @@ createServer({
 }).then(async () => {
   await syncIndexes();
   await foundation.seedAdmin();
+  try {
+    await seedDefaultApiKey();
+  } catch (error) {
+    logger.warn('Default API key seed failed', { error: error.message });
+  }
   // No bloquea el arranque: si Redis duerme, la API opera contra Mongo.
   cache.connect().catch(() => undefined);
 }).catch((err) => {

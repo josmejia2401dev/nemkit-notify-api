@@ -134,3 +134,9 @@ cp .env.example .env
 npm install
 npm run dev
 ```
+
+Al arrancar, el seed garantiza una API key interna si `DEFAULT_API_KEY` está
+definida. Si la key no existe, crea la empresa interna con
+`DEFAULT_API_KEY_EMAIL` / `DEFAULT_API_KEY_PASSWORD` y la asocia. Es idempotente:
+en arranques posteriores solo asegura que siga activa y con el nombre
+`DEFAULT_API_KEY_NAME`.

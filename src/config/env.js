@@ -45,6 +45,14 @@ const env = loadEnv({
   MAILJET_FROM_EMAIL: { default: '' },
   MAILJET_FROM_NAME: { default: 'Nemkit Notify' },
 
+  // API key interna por defecto. El seed la crea si no existe y, cuando
+  // hace falta, crea la empresa interna con estas credenciales.
+  DEFAULT_API_KEY: { default: '' },
+  DEFAULT_API_KEY_NAME: { default: 'default' },
+  DEFAULT_API_KEY_EMAIL: { default: '' },
+  DEFAULT_API_KEY_PASSWORD: { default: '' },
+  DEFAULT_API_KEY_COMPANY: { default: 'Nemkit Internal' },
+
   // Seed del admin (primer arranque, si no hay usuarios).
   // Los tres son REQUERIDOS y sin default: nada de credenciales del admin
   // queda hardcodeado en el código. Deben venir del entorno (.env / Render).
