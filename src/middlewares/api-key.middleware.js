@@ -1,8 +1,10 @@
 'use strict';
 
-const { HttpError, RECORD_STATUS } = require('nemkit');
+const { HttpError, RECORD_STATUS, sha256 } = require('nemkit');
 const { apiKeysService } = require('../modules/notify/api-keys/api-keys.service');
 const { foundation } = require('../config/foundation');
+const { cache, CACHE_TTL } = require('../config/cache');
+const { cacheKeys } = require('../modules/notify/cache/cache-keys');
 const { users: usersService } = foundation.services;
 
 /**
@@ -14,7 +16,11 @@ async function apiKeyAuth(req, _res, next) {
     const key = String(req.header('api-key') ?? '').trim();
     if (!key) throw HttpError.unauthorized('api-key header is required');
 
-    const record = await apiKeysService.findActiveByKey(key);
+    const record = await cache.readThrough({
+      key: cacheKeys.apiKey(sha256(key)),
+      ttlSeconds: CACHE_TTL.apiKey,
+      load: () => apiKeysService.findActiveByKey(key),
+    });
     if (!record) throw HttpError.unauthorized('Invalid api-key');
 
     const owner = await usersService.findById(record.userId);

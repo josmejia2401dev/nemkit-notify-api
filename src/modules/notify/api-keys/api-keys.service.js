@@ -3,6 +3,7 @@
 const crypto = require('crypto');
 const { BaseService, HttpError } = require('nemkit');
 const { ApiKeysRepository } = require('./api-keys.repository');
+const { invalidateApiKey } = require('../cache/cache-keys');
 const { foundation } = require('../../../config/foundation');
 const { paginationOptions } = foundation;
 const { limits: limitsService } = foundation.services;
@@ -42,7 +43,9 @@ class ApiKeysService extends BaseService {
   async revoke(userId, id, actorId) {
     const record = await this.findOne({ _id: id, userId });
     if (!record) throw HttpError.notFound('API key not found');
-    return this.softDelete(id, actorId);
+    const revoked = await this.softDelete(id, actorId);
+    await invalidateApiKey(record.key);
+    return revoked;
   }
 
   findActiveByKey(key) {
