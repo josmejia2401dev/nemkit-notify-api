@@ -35,18 +35,6 @@ const env = loadEnv({
   // todas las lecturas van directo a MongoDB.
   REDIS_URL: { default: '' },
   REDIS_ENABLED: { type: 'boolean', default: true },
-  CACHE_PREFIX: { default: 'nk:notify' },
-  CACHE_VERSION: { default: 'v1' },
-  REDIS_CONNECT_TIMEOUT_MS: { type: 'number', default: 1500 },
-  REDIS_COMMAND_TIMEOUT_MS: { type: 'number', default: 100 },
-  REDIS_CIRCUIT_FAILURES: { type: 'number', default: 3 },
-  REDIS_CIRCUIT_OPEN_MS: { type: 'number', default: 60000 },
-  REDIS_PROBE_INTERVAL_MS: { type: 'number', default: 30000 },
-  CACHE_TTL_API_KEY_SECONDS: { type: 'number', default: 30 },
-  CACHE_TTL_DETAIL_SECONDS: { type: 'number', default: 300 },
-  CACHE_TTL_CATALOG_SECONDS: { type: 'number', default: 120 },
-  CACHE_TTL_DASHBOARD_SECONDS: { type: 'number', default: 30 },
-  CACHE_TTL_STATS_SECONDS: { type: 'number', default: 30 },
 
   // ── Motor de notificaciones ──────────────────────────────────────────
   // Envío directo, sin cola ni reintentos.
